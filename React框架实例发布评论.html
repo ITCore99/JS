@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <script src="../Library/ReactLibrary/react.js"></script>
+    <script src="../Library/ReactLibrary/react-dom.js"></script>
+    <script src="../Library/ReactLibrary/browser-5.8.38.min.js"></script>
+    <style>
+body {
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+  background-color: #fbfbfb;
+}
+.wrapper {
+  width: 500px;
+  margin: 10px auto;
+  font-size: 14px;
+  background-color: #fff;
+  border: 1px solid #f1f1f1;
+  padding: 20px;
+}
+
+/* 评论框样式 */
+.comment-input {
+  background-color: #fff;
+  border: 1px solid #f1f1f1;
+  padding: 20px;
+  margin-bottom: 10px;
+}
+
+.comment-field {
+  margin-bottom: 15px;
+  display: flex;
+}
+
+.comment-field .comment-field-name {
+  display: flex;
+  flex-basis: 100px;
+  font-size: 14px;
+}
+
+.comment-field .comment-field-input {
+  display: flex;
+  flex: 1;
+}
+
+.comment-field-input input,.comment-field-input textarea {
+  border: 1px solid #e6e6e6;
+  border-radius: 3px;
+  padding: 5px;
+  outline: none;
+  font-size: 14px;
+  resize: none;
+  flex: 1;
+}
+
+.comment-field-input textarea {
+  height: 100px;
+}
+
+.comment-field-button {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.comment-field-button button {
+  padding: 5px 10px;
+  width: 80px;
+  border: none;
+  border-radius: 3px;
+  background-color: #00a3cf;
+  color: #fff;
+  outline: none;
+  cursor: pointer;
+}
+
+.comment-field-button button:active {
+  background: #13c1f1;
+}
+
+/* 评论列表样式 */
+.comment-list {
+  background-color: #fff;
+  border: 1px solid #f1f1f1;
+  padding: 20px;
+}
+
+/* 评论组件样式 */
+.comment {
+  border-bottom: 1px solid #f1f1f1;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  min-height: 50px;
+}
+.comment-box {
+    display: flex;
+}
+.comment .comment-user {
+  flex-shrink: 0;
+}
+.comment .btn {
+    margin-top: 10px;
+    text-align: right;
+}
+.comment span {
+  color: #00a3cf;
+  font-style: italic;
+  margin-right: 10px;
+}
+
+.comment p {
+  margin: 0;
+  /*text-indent: 2em;*/
+}
+
+</style>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="text/babel">
+    
+    //定义commentItem组件
+    let CommentItem=React.createClass({
+      //注意由于时间差是每一个item且各个item时间是不一样的所以要让item自个去控制时间的计算
+      //用于存放定时器。
+      timer:"",
+      getInitialState()
+      {
+        return({
+          elapsed:"",
+        });
+      },
+      //这是组件进行即将挂载是调用
+      componentWillMount()
+      {
+        this.TimeUpdate();
+        this.timer=setInterval(this.TimeUpdate,50000);
+      },
+      //组件在进行卸载时调用的函数
+      componentWillUnMount()
+      {
+        //作用是清除计时器
+        clearInterval(this.timer);
+      },
+      //时间自动更新函数
+      TimeUpdate()
+      {
+        let t1=+new Date();
+        let t2=this.props.comment.time;
+        let displayTime=Math.ceil((t1-t2)/1000);//注意这里是毫秒
+        let rs="";
+            if(displayTime<60)
+            {
+              rs=`${displayTime}秒`;
+            }else if(Math.floor(displayTime/60)<60)
+            {
+              rs=`${Math.floor(displayTime/60)}分钟`;
+            }else if(Math.floor(displayTime/3600)<24)
+            {
+              rs=`${Math.floor(displayTime/3600)}小时`;
+            }else
+            {
+              rs=`${Math.floor(displayTime/86400)}天`
+            }
+        this.setState({
+          elapsed:rs,
+        })
+      },
+      DelHander()
+      {
+        this.props.DHander(this.props.comment);
+      },
+      render()
+      {
+        return(
+          <div className="comment">
+            <div className="comment-box">
+                <div className="comment-user">
+                    <span>{this.props.comment.name}</span>
+                </div>
+                <p>{this.props.comment.content}</p>
+            </div>
+            <div className="btn">
+                <span>{this.state.elapsed}之前</span>
+                <a href="javascript:;" onClick={this.DelHander}>删除</a>
+            </div>
+          </div>
+        );
+      }
+    });
+    //ReactDOM.render(<CommentItem/>,document.getElementById("app"));
+    //定义评论list组件
+    let CommentList=React.createClass({
+      render()
+      {  
+        return(
+          <div>
+            {this.props.comments.map((item,index)=>{ return <CommentItem comment={item} key={index} DHander={this.props.DelComment}/>})}
+          </div>
+        );
+      }
+
+    });
+    //ReactDOM.render(<CommentList/>,document.getElementById("app"));
+    //定义评论发布组件
+    let CommentForm=React.createClass({
+      
+      //定义发布函数
+      addHander()
+      {
+        //注意这里我们不能进行操作DOM来实现获取用户名和评论内容，如果通过操作DOM来进行获取的话我们就会又回到以前的那种所以就没什么进步
+        //这里我们们通过属性ref属性进行获取，框架规定的。
+        let username=this.refs.username.value.trim();
+        let content=this.refs.content.value.trim();
+        if(username && content)
+        {
+            this.props.AddComment({
+              name:username,
+              content,
+              time:+new Date(),
+          });
+          this.refs.username.value="";
+          this.refs.content.value="";
+        }else
+        {
+          alert("用户名或评论不能为空");
+        }
+        
+      },
+      render()
+      {
+        return(
+          <div className="comment-input">
+              <div className="comment-field">
+                  <span className="comment-field-name">用户名：</span>
+                  <div className="comment-field-input">
+                      <input type="text" ref="username"/>
+                  </div>
+              </div>
+              <div className="comment-field">
+                  <span className="comment-field-name">评论内容：</span>
+                  <div className="comment-field-input">
+                      <textarea ref="content"></textarea>
+                  </div>
+              </div>
+              <div className="comment-field-button">
+                  <button onClick={this.addHander}>发布</button>
+              </div>
+          </div>
+        );
+      }
+    });
+        //ReactDOM.render(<CommentForm/>,document.getElementById("app"));
+        //定义APP组件
+    let App=React.createClass({
+        //需要注意的主组件必须在小组件之后不然的话会报错找不到小组件。
+        //在我们写项目时我们一般为了提高提高项目的性能通过将所有的数据放到根组件中到时只需要传递数据即可。
+        //初始化数据
+        //特别需要注意的在进行对数据改变之后要重新设置及刷新数据。
+        getInitialState()
+        {
+          return{
+            comments:[{"name":"Tom","content":"吓得蜜糖赶紧问她：你知道医用面膜和生活面膜的区别吗？","time":1534153065558},{"name":"Alice","content":"就有人讲目光投向了“医用面膜”","time":1534153190498},{"name":"张志贤","content":"0-我愿意！","time":1534153190400},{"name":"Mine","content":"我也愿意！","time":1534153190400}]
+          }
+        },
+        //添加评论
+        AddComment(comment)
+        { 
+          this.state.comments.push(comment);
+          this.setState({
+            comments:this.state.comments,
+          })
+        },
+        //删除评论
+        DelComment(comment)
+        {
+          let index= this.state.comments.findIndex((item,index)=>{return item==comment});
+          this.state.comments.splice(index,1);
+          this.setState({
+            comments: this.state.comments,
+          });
+        },
+        render()
+        {  
+          return(
+            <div className="wrapper">
+                <CommentForm AddComment={this.AddComment}/>
+                <CommentList comments={this.state.comments} DelComment={this.DelComment} />
+            </div>
+          );
+        }
+      });
+    ReactDOM.render(<App/>,document.getElementById("app"));
+    //总结：注意使用组件思想进行编程是写组件是从子组件开始。 
+  </script>
+</body>
+</html>
+
